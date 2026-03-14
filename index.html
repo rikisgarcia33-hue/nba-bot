@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="NBA Bot">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>NBA Value Bot</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #13131a;
+  --surface2: #1c1c27;
+  --border: rgba(255,255,255,0.07);
+  --orange: #E8500A;
+  --orange-dim: rgba(232,80,10,0.12);
+  --green: #1DB954;
+  --green-dim: rgba(29,185,84,0.1);
+  --red: #E83A3A;
+  --red-dim: rgba(232,58,58,0.1);
+  --amber: #F5A623;
+  --amber-dim: rgba(245,166,35,0.1);
+  --text: #F0EEE8;
+  --text2: rgba(240,238,232,0.5);
+  --text3: rgba(240,238,232,0.28);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bot: env(safe-area-inset-bottom, 0px);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Barlow', sans-serif; overflow-x: hidden; }
+
+/* HEADER */
+.header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(10,10,15,0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 0.5px solid var(--border);
+  padding: calc(var(--safe-top) + 12px) 16px 12px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.header-brand { display: flex; align-items: center; gap: 10px; }
+.brand-icon {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: var(--orange);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700; font-size: 18px; color: white; letter-spacing: -1px;
+}
+.brand-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: 0.5px; }
+.brand-name span { color: var(--orange); }
+.live-dot { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text2); }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* NAV TABS */
+.nav {
+  display: flex; gap: 0;
+  border-bottom: 0.5px solid var(--border);
+  background: var(--bg); position: sticky; top: 58px; z-index: 99;
+  padding: 0 16px;
+}
+.nav-tab {
+  flex: 1; padding: 11px 0; font-size: 12px; font-weight: 600;
+  color: var(--text3); background: none; border: none;
+  border-bottom: 2px solid transparent; cursor: pointer;
+  letter-spacing: 0.06em; text-transform: uppercase; transition: all .2s;
+  font-family: 'Barlow', sans-serif;
+}
+.nav-tab.active { color: var(--orange); border-bottom-color: var(--orange); }
+
+/* CONTENT */
+.page { display: none; padding: 16px 16px calc(var(--safe-bot) + 80px); }
+.page.active { display: block; }
+
+/* ODDS CONTROL */
+.odds-control {
+  background: var(--surface); border: 0.5px solid var(--border);
+  border-radius: 14px; padding: 14px 16px; margin-bottom: 16px;
+}
+.odds-control-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px; font-weight: 600; }
+.odds-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.odds-row:last-child { margin-bottom: 0; }
+.odds-lbl { font-size: 13px; color: var(--text2); min-width: 60px; }
+.odds-inputs { display: flex; align-items: center; gap: 8px; flex: 1; }
+.odds-input {
+  flex: 1; background: var(--surface2); border: 0.5px solid var(--border);
+  color: var(--text); font-family: 'Barlow Condensed', sans-serif;
+  font-size: 20px; font-weight: 600; text-align: center;
+  border-radius: 10px; padding: 8px 10px; outline: none;
+  -webkit-appearance: none; appearance: none;
+}
+.odds-input:focus { border-color: var(--orange); }
+.odds-sep { color: var(--text3); font-size: 13px; }
+.apply-btn {
+  width: 100%; background: var(--orange); color: white; border: none;
+  border-radius: 10px; padding: 11px; font-family: 'Barlow Condensed', sans-serif;
+  font-size: 16px; font-weight: 700; letter-spacing: .5px; cursor: pointer;
+  margin-top: 4px; transition: opacity .15s;
+}
+.apply-btn:active { opacity: .8; }
+
+/* DATE STRIP */
+.date-strip { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 16px; scrollbar-width: none; }
+.date-strip::-webkit-scrollbar { display: none; }
+.date-chip {
+  flex-shrink: 0; padding: 6px 14px; border-radius: 20px;
+  font-size: 12px; font-weight: 600; border: 0.5px solid var(--border);
+  background: var(--surface); color: var(--text2); cursor: pointer;
+  font-family: 'Barlow', sans-serif; transition: all .15s;
+}
+.date-chip.active { background: var(--orange-dim); border-color: var(--orange); color: var(--orange); }
+
+/* SECTION LABEL */
+.section-lbl {
+  font-size: 11px; color: var(--text3); text-transform: uppercase;
+  letter-spacing: .1em; font-weight: 600; margin-bottom: 10px; margin-top: 4px;
+}
+
+/* VALUE BADGE */
+.value-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 6px; font-size: 11px; font-weight: 700;
+  letter-spacing: .04em; font-family: 'Barlow Condensed', sans-serif;
+}
+.value-tag.pos { background: var(--green-dim); color: var(--green); border: 0.5px solid rgba(29,185,84,.25); }
+.value-tag.neg { background: var(--red-dim); color: var(--red); border: 0.5px solid rgba(232,58,58,.25); }
+.value-tag.warn { background: var(--amber-dim); color: var(--amber); border: 0.5px solid rgba(245,166,35,.25); }
+
+/* GAME CARD */
+.game-card {
+  background: var(--surface); border: 0.5px solid var(--border);
+  border-radius: 16px; margin-bottom: 12px; overflow: hidden;
+  transition: transform .1s;
+}
+.game-card:active { transform: scale(0.99); }
+.game-card.has-value { border-color: rgba(232,80,10,.35); }
+
+.card-top { padding: 14px 16px 10px; }
+.card-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.card-league { font-size: 10px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
+.card-time { font-size: 11px; color: var(--text2); }
+
+.matchup { display: flex; align-items: center; gap: 0; margin-bottom: 14px; }
+.team { flex: 1; }
+.team-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 22px; font-weight: 700; letter-spacing: .3px;
+  color: var(--text); line-height: 1.1;
+}
+.team-city { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.team.away { text-align: right; }
+.vs-col { text-align: center; padding: 0 10px; }
+.vs { font-size: 11px; color: var(--text3); font-weight: 600; }
+
+/* SCORE PROJECTION BLOCK */
+.proj-block {
+  background: var(--surface2); border-radius: 12px; padding: 12px 14px;
+  margin-bottom: 0;
+}
+.proj-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.proj-row:last-child { margin-bottom: 0; }
+.proj-lbl { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+.proj-scores { display: flex; align-items: center; gap: 8px; }
+.proj-score { font-family: 'Barlow Condensed', sans-serif; font-size: 26px; font-weight: 700; color: var(--text); }
+.proj-dash { font-size: 14px; color: var(--text3); }
+.proj-score.highlight { color: var(--orange); }
+
+/* ODDS COMPARISON */
+.odds-compare { display: grid; grid-template-columns: 1fr 0.5px 1fr; }
+.odds-half { padding: 12px 14px; text-align: center; }
+.odds-divider { background: var(--border); }
+.odds-type-lbl { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; margin-bottom: 6px; }
+.odds-number {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 28px; font-weight: 700; line-height: 1;
+}
+.odds-number.market { color: var(--text2); }
+.odds-number.bot { color: var(--orange); }
+.odds-number.value { color: var(--green); }
+.odds-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+/* EXPAND ARROW */
+.card-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 16px 10px; border-top: 0.5px solid var(--border);
+}
+.card-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.expand-btn { font-size: 11px; color: var(--text3); background: none; border: none; cursor: pointer; padding: 4px; }
+
+/* EXPANDED DETAIL */
+.detail-panel {
+  display: none; border-top: 0.5px solid var(--border); padding: 14px 16px;
+  background: var(--bg);
+}
+.detail-panel.open { display: block; }
+.detail-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; font-weight: 600; margin-bottom: 10px; }
+.stat-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 0.5px solid var(--border); font-size: 13px; }
+.stat-row:last-child { border-bottom: none; }
+.stat-lbl { color: var(--text2); }
+.stat-val { color: var(--text); font-weight: 600; }
+.form-dots { display: flex; gap: 3px; }
+.fdot { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; }
+.fdot.W { background: rgba(29,185,84,.15); color: var(--green); }
+.fdot.L { background: var(--red-dim); color: var(--red); }
+
+/* INJURY ROW */
+.injury-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 0.5px solid var(--border); font-size: 13px; }
+.injury-row:last-child { border-bottom: none; }
+.inj-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.inj-dot.out { background: var(--red); }
+.inj-dot.doubt { background: var(--amber); }
+.inj-dot.ok { background: var(--green); }
+.inj-name { flex: 1; color: var(--text); }
+.inj-team { color: var(--text3); font-size: 11px; }
+.inj-status { font-size: 11px; font-weight: 600; }
+.inj-status.out { color: var(--red); }
+.inj-status.doubt { color: var(--amber); }
+
+/* NO VALUE STATE */
+.empty-state { text-align: center; padding: 60px 20px; }
+.empty-icon { font-size: 40px; margin-bottom: 14px; opacity: .3; }
+.empty-title { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700; color: var(--text2); margin-bottom: 6px; }
+.empty-sub { font-size: 13px; color: var(--text3); }
+
+/* SETTINGS PAGE */
+.setting-group { margin-bottom: 20px; }
+.setting-group-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .1em; font-weight: 600; margin-bottom: 10px; }
+.setting-item {
+  background: var(--surface); border: 0.5px solid var(--border);
+  border-radius: 12px; padding: 14px 16px; margin-bottom: 8px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.setting-lbl { font-size: 14px; color: var(--text); }
+.setting-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.toggle {
+  width: 44px; height: 26px; border-radius: 13px;
+  background: var(--surface2); border: none; cursor: pointer;
+  position: relative; transition: background .2s; flex-shrink: 0;
+}
+.toggle.on { background: var(--orange); }
+.toggle::after {
+  content: ''; position: absolute; width: 20px; height: 20px;
+  border-radius: 50%; background: white; top: 3px; left: 3px;
+  transition: transform .2s;
+}
+.toggle.on::after { transform: translateX(18px); }
+.range-input { width: 100%; accent-color: var(--orange); }
+
+/* INSTALL BANNER */
+.install-banner {
+  background: linear-gradient(135deg, var(--orange-dim), rgba(232,80,10,0.05));
+  border: 0.5px solid rgba(232,80,10,.35);
+  border-radius: 14px; padding: 14px 16px; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 12px;
+}
+.install-icon { font-size: 28px; flex-shrink: 0; }
+.install-text { flex: 1; }
+.install-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.install-sub { font-size: 12px; color: var(--text2); line-height: 1.4; }
+.install-btn {
+  background: var(--orange); color: white; border: none;
+  border-radius: 8px; padding: 8px 14px; font-size: 13px; font-weight: 700;
+  cursor: pointer; white-space: nowrap; font-family: 'Barlow', sans-serif;
+}
+
+/* BOTTOM NAV */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: rgba(10,10,15,0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 0.5px solid var(--border);
+  display: flex;
+  padding-bottom: var(--safe-bot);
+  z-index: 200;
+}
+.bnav-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  padding: 10px 0 6px; background: none; border: none; cursor: pointer;
+  color: var(--text3); transition: color .15s; font-family: 'Barlow', sans-serif;
+}
+.bnav-btn.active { color: var(--orange); }
+.bnav-icon { font-size: 20px; margin-bottom: 2px; line-height: 1; }
+.bnav-lbl { font-size: 10px; font-weight: 600; letter-spacing: .04em; }
+
+/* CONFIDENCE BAR */
+.conf-bar-wrap { flex: 1; height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
+.conf-bar { height: 100%; border-radius: 2px; transition: width .4s; }
+
+/* PULSE animation for value cards */
+@keyframes valueGlow {
+  0%,100% { box-shadow: 0 0 0 0 rgba(232,80,10,0); }
+  50% { box-shadow: 0 0 0 4px rgba(232,80,10,0.08); }
+}
+.game-card.has-value { animation: valueGlow 3s infinite; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-brand">
+    <div class="brand-icon">N</div>
+    <div class="brand-name">NBA <span>Value</span> Bot</div>
+  </div>
+  <div class="live-dot">
+    <div class="dot"></div>
+    <span id="clock">--:--</span>
+  </div>
+</div>
+
+<nav class="nav">
+  <button class="nav-tab active" onclick="goPage('picks')">Picks</button>
+  <button class="nav-tab" onclick="goPage('analisis')">Análisis</button>
+  <button class="nav-tab" onclick="goPage('config')">Cuotas</button>
+</nav>
+
+<!-- ============ PICKS PAGE ============ -->
+<div class="page active" id="page-picks">
+
+  <div id="install-banner" class="install-banner" style="display:none;">
+    <div class="install-icon">📲</div>
+    <div class="install-text">
+      <div class="install-title">Instalar como app</div>
+      <div class="install-sub">Toca "Compartir" → "Añadir a inicio" en Safari</div>
+    </div>
+    <button class="install-btn" id="install-btn">Instalar</button>
+  </div>
+
+  <div class="date-strip" id="date-strip"></div>
+
+  <div class="section-lbl" id="picks-label">Con valor hoy</div>
+  <div id="picks-list"></div>
+
+</div>
+
+<!-- ============ ANÁLISIS PAGE ============ -->
+<div class="page" id="page-analisis">
+  <div class="section-lbl">H2H · Últimos 10 · Lesionados</div>
+  <div id="analisis-list"></div>
+</div>
+
+<!-- ============ CONFIG PAGE ============ -->
+<div class="page" id="page-config">
+
+  <div class="odds-control">
+    <div class="odds-control-title">Rango de cuota con valor</div>
+    <div class="odds-row">
+      <span class="odds-lbl">Mínima</span>
+      <div class="odds-inputs">
+        <input class="odds-input" type="number" id="min-odds" value="1.57" step="0.01" min="1.01" max="3.00">
+        <span class="odds-sep">—</span>
+        <input class="odds-input" type="number" id="max-odds" value="1.77" step="0.01" min="1.01" max="3.00">
+      </div>
+      <span class="odds-lbl" style="text-align:right;">Máxima</span>
+    </div>
+    <div style="font-size:12px;color:var(--text3);text-align:center;margin:6px 0 10px;">
+      Objetivo: <span id="target-display" style="color:var(--orange);font-weight:600;">1.67 ± 0.10</span>
+    </div>
+    <button class="apply-btn" onclick="applyOdds()">Aplicar filtro</button>
+  </div>
+
+  <div class="setting-group">
+    <div class="setting-group-title">Notificaciones</div>
+    <div class="setting-item">
+      <div>
+        <div class="setting-lbl">Alerta 1h antes</div>
+        <div class="setting-sub">Aviso cuando haya valor detectado</div>
+      </div>
+      <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+    </div>
+    <div class="setting-item">
+      <div>
+        <div class="setting-lbl">Solo valor fuerte</div>
+        <div class="setting-sub">Edge > 5% únicamente</div>
+      </div>
+      <button class="toggle" onclick="this.classList.toggle('on')"></button>
+    </div>
+  </div>
+
+  <div class="setting-group">
+    <div class="setting-group-title">Instalar en celular</div>
+    <div class="setting-item" style="flex-direction:column;align-items:flex-start;gap:10px;">
+      <div>
+        <div class="setting-lbl">iOS (iPhone/iPad)</div>
+        <div class="setting-sub">Safari → botón Compartir → "Añadir a pantalla de inicio"</div>
+      </div>
+      <div>
+        <div class="setting-lbl">Android</div>
+        <div class="setting-sub">Chrome → menú ⋮ → "Añadir a pantalla de inicio" o "Instalar app"</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="bnav-btn active" onclick="goPage('picks'); setActive(this)">
+    <div class="bnav-icon">🏀</div>
+    <div class="bnav-lbl">Picks</div>
+  </button>
+  <button class="bnav-btn" onclick="goPage('analisis'); setActive(this)">
+    <div class="bnav-icon">📊</div>
+    <div class="bnav-lbl">Análisis</div>
+  </button>
+  <button class="bnav-btn" onclick="goPage('config'); setActive(this)">
+    <div class="bnav-icon">⚙️</div>
+    <div class="bnav-lbl">Cuotas</div>
+  </button>
+</nav>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────
+let minOdds = 1.57, maxOdds = 1.77;
+
+// ─── CLOCK ────────────────────────────────────────
+function tick() {
+  const d = new Date();
+  document.getElementById('clock').textContent =
+    String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+tick(); setInterval(tick, 10000);
+
+// ─── NAVIGATION ───────────────────────────────────
+function goPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  const tabs = document.querySelectorAll('.nav-tab');
+  const map = {picks:0, analisis:1, config:2};
+  tabs[map[name]].classList.add('active');
+}
+function setActive(btn) {
+  document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ─── DATA (mock — replace with real API) ──────────
+const TODAY = new Date();
+
+function dateLabel(offset) {
+  const d = new Date(TODAY);
+  d.setDate(d.getDate() + offset);
+  if (offset === 0) return 'Hoy';
+  if (offset === 1) return 'Mañana';
+  return d.toLocaleDateString('es', {weekday:'short', day:'numeric'});
+}
+
+const GAMES = [
+  {
+    id: 1,
+    home: {abbr:'BOS', city:'Boston', name:'Celtics'},
+    away: {abbr:'LAL', city:'Los Angeles', name:'Lakers'},
+    time: '19:30 EST',
+    dateOffset: 0,
+    projection: {home: 114, away: 108},
+    marketOdds: {home: 1.54, away: 2.40},
+    botOdds:    {home: 1.68, away: 2.25},
+    valueOn: 'home',
+    edge: 8.4,
+    confidence: 78,
+    b2b: 'Lakers jugaron ayer (fatiga alta)',
+    h2h: [{d:'10 Mar',r:'BOS 114 – LAL 108', w:'BOS'},{d:'01 Feb',r:'LAL 121 – BOS 113',w:'LAL'},{d:'19 Nov',r:'BOS 126 – LAL 117',w:'BOS'},{d:'01 Nov',r:'BOS 132 – LAL 109',w:'BOS'},{d:'25 Mar',r:'LAL 108 – BOS 102',w:'LAL'}],
+    form: {home:['W','W','L','W','W','W','L','W','W','L'], away:['L','W','L','L','W','L','W','L','L','W']},
+    injuries:[
+      {name:'Anthony Davis', team:'LAL', status:'doubt'},
+      {name:'LeBron James',  team:'LAL', status:'ok'},
+      {name:'Jaylen Brown',  team:'BOS', status:'ok'},
+    ]
+  },
+  {
+    id: 2,
+    home: {abbr:'MIL', city:'Milwaukee', name:'Bucks'},
+    away: {abbr:'GSW', city:'Golden State', name:'Warriors'},
+    time: '20:00 EST',
+    dateOffset: 0,
+    projection: {home: 119, away: 112},
+    marketOdds: {home: 1.62, away: 2.10},
+    botOdds:    {home: 1.70, away: 2.05},
+    valueOn: 'home',
+    edge: 4.7,
+    confidence: 65,
+    b2b: 'Ambos descansados',
+    h2h: [{d:'15 Feb',r:'MIL 118 – GSW 112',w:'MIL'},{d:'03 Dic',r:'GSW 121 – MIL 114',w:'GSW'},{d:'11 Nov',r:'MIL 130 – GSW 118',w:'MIL'}],
+    form: {home:['W','L','W','W','L','W','W','L','W','W'], away:['W','W','L','W','L','L','W','W','L','W']},
+    injuries:[
+      {name:'Damian Lillard', team:'MIL', status:'doubt'},
+      {name:'Steph Curry',    team:'GSW', status:'ok'},
+    ]
+  },
+  {
+    id: 3,
+    home: {abbr:'NYK', city:'New York', name:'Knicks'},
+    away: {abbr:'PHX', city:'Phoenix', name:'Suns'},
+    time: '21:30 EST',
+    dateOffset: 0,
+    projection: {home: 107, away: 105},
+    marketOdds: {home: 1.74, away: 2.00},
+    botOdds:    {home: 1.74, away: 2.01},
+    valueOn: null,
+    edge: 0.1,
+    confidence: 51,
+    b2b: 'Suns jugaron ayer',
+    h2h: [{d:'20 Ene',r:'NYK 112 – PHX 98',w:'NYK'}],
+    form: {home:['W','L','W','L','W','L','W','W','L','W'], away:['L','L','W','L','W','L','L','W','L','L']},
+    injuries:[{name:'Kevin Durant',team:'PHX',status:'out'},{name:'Devin Booker',team:'PHX',status:'ok'}]
+  },
+  {
+    id: 4,
+    home: {abbr:'DEN', city:'Denver', name:'Nuggets'},
+    away: {abbr:'MIN', city:'Minnesota', name:'Timberwolves'},
+    time: '20:00 EST',
+    dateOffset: 1,
+    projection: {home: 116, away: 109},
+    marketOdds: {home: 1.60, away: 2.20},
+    botOdds:    {home: 1.70, away: 2.10},
+    valueOn: 'home',
+    edge: 5.9,
+    confidence: 72,
+    b2b: 'Ambos descansados',
+    h2h: [{d:'05 Mar',r:'DEN 122 – MIN 115',w:'DEN'},{d:'18 Ene',r:'MIN 108 – DEN 104',w:'MIN'}],
+    form: {home:['W','W','W','L','W','W','L','W','W','L'], away:['W','L','W','W','L','W','L','L','W','W']},
+    injuries:[{name:'Nikola Jokic',team:'DEN',status:'ok'},{name:'Anthony Edwards',team:'MIN',status:'ok'}]
+  }
+];
+
+// ─── DATE STRIP ───────────────────────────────────
+let selectedDate = 0;
+function buildDateStrip() {
+  const strip = document.getElementById('date-strip');
+  strip.innerHTML = '';
+  [-1,0,1,2].forEach(offset => {
+    const chip = document.createElement('button');
+    chip.className = 'date-chip' + (offset === 0 ? ' active' : '');
+    chip.textContent = dateLabel(offset);
+    chip.onclick = () => {
+      selectedDate = offset;
+      document.querySelectorAll('.date-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      renderPicks();
+    };
+    strip.appendChild(chip);
+  });
+}
+
+// ─── RENDER PICKS ─────────────────────────────────
+function inRange(odds) { return odds >= minOdds && odds <= maxOdds; }
+
+function getValueGame(g) {
+  if (!g.valueOn) return null;
+  const botO = g.botOdds[g.valueOn];
+  if (!inRange(botO)) return null;
+  return botO;
+}
+
+function formDots(arr) {
+  return arr.map(r => `<div class="fdot ${r}">${r}</div>`).join('');
+}
+
+function renderPicks() {
+  const list = document.getElementById('picks-list');
+  const lbl  = document.getElementById('picks-label');
+  const games = GAMES.filter(g => g.dateOffset === selectedDate);
+  const valued = games.filter(g => getValueGame(g) !== null);
+
+  if (valued.length === 0) {
+    const others = games.length;
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-title">Sin valor en este rango</div>
+        <div class="empty-sub">${others} partido${others!==1?'s':''} hoy · Cuota ${minOdds.toFixed(2)} – ${maxOdds.toFixed(2)}<br>Ajusta el rango en la pestaña Cuotas</div>
+      </div>`;
+    lbl.textContent = 'Con valor · ' + dateLabel(selectedDate);
+    return;
+  }
+
+  lbl.textContent = `Con valor · ${dateLabel(selectedDate)} · ${valued.length} partido${valued.length>1?'s':''}`;
+  list.innerHTML = valued.map(g => {
+    const side = g.valueOn;
+    const teamV = g[side];
+    const teamO = g[side==='home'?'away':'home'];
+    const botO  = g.botOdds[side].toFixed(2);
+    const mktO  = g.marketOdds[side].toFixed(2);
+    const projV = side==='home' ? g.projection.home : g.projection.away;
+    const projO = side==='home' ? g.projection.away : g.projection.home;
+    const conf  = g.confidence;
+    const confColor = conf >= 70 ? '#1DB954' : conf >= 55 ? '#F5A623' : '#E83A3A';
+    return `
+    <div class="game-card has-value" id="card-${g.id}">
+      <div class="card-top">
+        <div class="card-meta">
+          <span class="card-league">NBA · ${g.time}</span>
+          <span class="value-tag pos">+${g.edge.toFixed(1)}% VALOR</span>
+        </div>
+        <div class="matchup">
+          <div class="team home">
+            <div class="team-name">${g.home.abbr}</div>
+            <div class="team-city">${g.home.city}</div>
+          </div>
+          <div class="vs-col"><div class="vs">VS</div></div>
+          <div class="team away">
+            <div class="team-name">${g.away.abbr}</div>
+            <div class="team-city">${g.away.city}</div>
+          </div>
+        </div>
+
+        <div class="proj-block">
+          <div class="proj-row">
+            <span class="proj-lbl">Puntaje proyectado</span>
+            <div class="proj-scores">
+              <span class="proj-score${side==='home'?' highlight':''}">${g.projection.home}</span>
+              <span class="proj-dash">–</span>
+              <span class="proj-score${side==='away'?' highlight':''}">${g.projection.away}</span>
+            </div>
+          </div>
+          <div class="proj-row">
+            <span class="proj-lbl">Confianza</span>
+            <div style="display:flex;align-items:center;gap:8px;flex:1;justify-content:flex-end;">
+              <div class="conf-bar-wrap"><div class="conf-bar" style="width:${conf}%;background:${confColor};"></div></div>
+              <span style="font-size:12px;font-weight:600;color:${confColor};min-width:32px;text-align:right;">${conf}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="odds-compare">
+        <div class="odds-half">
+          <div class="odds-type-lbl">Casa apuesta</div>
+          <div class="odds-number market">${mktO}</div>
+          <div class="odds-sub">${teamV.abbr} ML</div>
+        </div>
+        <div class="odds-divider"></div>
+        <div class="odds-half">
+          <div class="odds-type-lbl">Bot proyecta</div>
+          <div class="odds-number value">${botO}</div>
+          <div class="odds-sub" style="color:var(--green);">★ Con valor</div>
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <div class="card-tags">
+          ${g.b2b.includes('ayer') ? '<span class="value-tag warn">B2B</span>' : '<span class="value-tag pos">Descansado</span>'}
+          ${g.injuries.some(i=>i.status==='out') ? '<span class="value-tag neg">Lesionados</span>' : ''}
+        </div>
+        <button class="expand-btn" onclick="toggleDetail(${g.id}, this)">Ver más ▾</button>
+      </div>
+
+      <div class="detail-panel" id="detail-${g.id}">
+        <div class="detail-title">H2H reciente</div>
+        ${g.h2h.map(h=>`<div class="stat-row"><span class="stat-lbl">${h.d}</span><span class="stat-val">${h.r}</span></div>`).join('')}
+
+        <div class="detail-title" style="margin-top:14px;">Forma últimos 10</div>
+        <div class="stat-row">
+          <span class="stat-lbl">${g.home.abbr}</span>
+          <div class="form-dots">${formDots(g.form.home)}</div>
+        </div>
+        <div class="stat-row">
+          <span class="stat-lbl">${g.away.abbr}</span>
+          <div class="form-dots">${formDots(g.form.away)}</div>
+        </div>
+
+        <div class="detail-title" style="margin-top:14px;">Lesionados</div>
+        ${g.injuries.map(i=>`
+          <div class="injury-row">
+            <div class="inj-dot ${i.status}"></div>
+            <span class="inj-name">${i.name} <span class="inj-team">${i.team}</span></span>
+            <span class="inj-status ${i.status==='ok'?'':''+i.status}">${i.status==='ok'?'Disponible':i.status==='out'?'Baja':'Duda'}</span>
+          </div>`).join('')}
+
+        <div style="margin-top:12px;padding:10px 12px;background:var(--surface2);border-radius:10px;">
+          <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:4px;">B2B</div>
+          <div style="font-size:13px;color:var(--text2);">${g.b2b}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleDetail(id, btn) {
+  const panel = document.getElementById('detail-' + id);
+  panel.classList.toggle('open');
+  btn.textContent = panel.classList.contains('open') ? 'Ver menos ▴' : 'Ver más ▾';
+}
+
+// ─── ANÁLISIS PAGE ────────────────────────────────
+function renderAnalisis() {
+  const list = document.getElementById('analisis-list');
+  list.innerHTML = GAMES.filter(g => g.dateOffset === 0 || g.dateOffset === 1).map(g => `
+    <div class="game-card" style="margin-bottom:12px;">
+      <div class="card-top">
+        <div class="card-meta">
+          <span class="card-league">NBA · ${g.home.abbr} vs ${g.away.abbr}</span>
+          <span style="font-size:11px;color:var(--text3);">${g.time}</span>
+        </div>
+
+        <div class="detail-title">H2H</div>
+        ${g.h2h.map(h=>`<div class="stat-row"><span class="stat-lbl">${h.d}</span><span class="stat-val">${h.r}</span></div>`).join('')}
+
+        <div class="detail-title" style="margin-top:12px;">Últimos 10</div>
+        <div class="stat-row">
+          <span class="stat-lbl">${g.home.abbr}</span>
+          <div class="form-dots">${formDots(g.form.home)}</div>
+        </div>
+        <div class="stat-row">
+          <span class="stat-lbl">${g.away.abbr}</span>
+          <div class="form-dots">${formDots(g.form.away)}</div>
+        </div>
+
+        <div class="detail-title" style="margin-top:12px;">Lesionados</div>
+        ${g.injuries.map(i=>`
+          <div class="injury-row">
+            <div class="inj-dot ${i.status}"></div>
+            <span class="inj-name">${i.name} <span class="inj-team">${i.team}</span></span>
+            <span class="inj-status ${i.status==='ok'?'':''+i.status}">${i.status==='ok'?'Disponible':i.status==='out'?'Baja':'Duda'}</span>
+          </div>`).join('')}
+
+        <div style="margin-top:10px;padding:9px 12px;background:var(--surface2);border-radius:10px;font-size:13px;color:var(--text2);">
+          <strong style="color:var(--text3);font-size:11px;text-transform:uppercase;letter-spacing:.06em;">B2B — </strong>${g.b2b}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ─── ODDS CONFIG ──────────────────────────────────
+function updateTargetDisplay() {
+  const mn = parseFloat(document.getElementById('min-odds').value) || 1.57;
+  const mx = parseFloat(document.getElementById('max-odds').value) || 1.77;
+  const mid = ((mn + mx) / 2).toFixed(2);
+  const range = ((mx - mn) / 2).toFixed(2);
+  document.getElementById('target-display').textContent = `${mid} ± ${range}`;
+}
+
+document.getElementById('min-odds').addEventListener('input', updateTargetDisplay);
+document.getElementById('max-odds').addEventListener('input', updateTargetDisplay);
+
+function applyOdds() {
+  minOdds = parseFloat(document.getElementById('min-odds').value) || 1.57;
+  maxOdds = parseFloat(document.getElementById('max-odds').value) || 1.77;
+  if (minOdds > maxOdds) { let t=minOdds; minOdds=maxOdds; maxOdds=t; }
+  renderPicks();
+  goPage('picks');
+  document.querySelectorAll('.bnav-btn').forEach((b,i) => b.classList.toggle('active', i===0));
+}
+
+// ─── PWA INSTALL ──────────────────────────────────
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('install-banner').style.display = 'flex';
+});
+document.getElementById('install-btn').addEventListener('click', async () => {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const {outcome} = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    if (outcome === 'accepted') document.getElementById('install-banner').style.display = 'none';
+  }
+});
+window.addEventListener('appinstalled', () => {
+  document.getElementById('install-banner').style.display = 'none';
+});
+
+// Show iOS hint if on Safari
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+if (isIOS && !isStandalone) {
+  document.getElementById('install-banner').style.display = 'flex';
+  document.getElementById('install-banner').querySelector('.install-sub').textContent =
+    'Safari → botón Compartir → "Añadir a pantalla de inicio"';
+  document.getElementById('install-btn').style.display = 'none';
+}
+
+// ─── SERVICE WORKER ───────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+
+// ─── INIT ─────────────────────────────────────────
+buildDateStrip();
+renderPicks();
+renderAnalisis();
+updateTargetDisplay();
+</script>
+</body>
+</html>
